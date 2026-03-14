@@ -6,6 +6,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "CoreInventory",
   description: "Modular Inventory Management System",
+  icons: {
+    icon: "/favicon.ico",
+  },
 }
 
 export default function RootLayout({
