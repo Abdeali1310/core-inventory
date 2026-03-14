@@ -173,7 +173,7 @@ export interface CreateDeliveryInput {
   source_location_id: string;
   scheduled_date?: string;
   notes?: string;
-  lines: { product_id: string; expected_qty: number }[];
+  lines: { product_id: string; requested_qty: number }[]
 }
 
 function generateReference(count: number): string {
@@ -218,7 +218,7 @@ export async function createDelivery(data: CreateDeliveryInput) {
     const lines = data.lines.map(line => ({
       delivery_id: delivery.id,
       product_id: line.product_id,
-      expected_qty: line.expected_qty,
+      requested_qty: line.requested_qty,
       delivered_qty: 0,
     }));
 
@@ -336,7 +336,7 @@ export async function validateDelivery(
         location_id: delivery.source_location_id,
         quantity: newQty,
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'product_id,location_id' });
 
     await supabase.from('stock_ledger').insert({
       product_id: productId,

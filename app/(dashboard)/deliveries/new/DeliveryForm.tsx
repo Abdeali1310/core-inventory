@@ -104,7 +104,7 @@ export function DeliveryForm({ locations, products }: DeliveryFormProps) {
         notes: formData.notes || undefined,
         lines: validLines.map(l => ({
           product_id: l.product_id,
-          expected_qty: l.expected_qty,
+          requested_qty: l.expected_qty,
         })),
       });
 
@@ -125,9 +125,9 @@ export function DeliveryForm({ locations, products }: DeliveryFormProps) {
 
   const selectedLocationStocks = formData.source_location_id
     ? products.map(p => ({
-        id: p.id,
-        stock: p.total_stock || 0,
-      }))
+      id: p.id,
+      stock: p.total_stock || 0,
+    }))
     : [];
 
   return (
