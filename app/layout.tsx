@@ -1,19 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
+import { Providers } from "./providers";
 import "./globals.css";
-import { TooltipProvider } from "@/components/ui/tooltip"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata = {
+export const metadata: Metadata = {
   title: "CoreInventory",
   description: "Modular Inventory Management System",
 }
@@ -24,11 +14,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="en" className="dark">
+      <body className="antialiased">
+        <Providers>
+          {children}
+          <Toaster 
+            position="bottom-right"
+            theme="dark"
+            richColors
+            closeButton
+          />
+        </Providers>
       </body>
     </html>
   );
