@@ -270,5 +270,6 @@ export async function cancelAdjustment(id: string) {
         .update({ status: 'canceled' })
         .eq('id', id);
     revalidatePath('/adjustments');
+
     return { success: true };
 }

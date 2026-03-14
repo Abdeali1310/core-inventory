@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-
+import { notifyLowStock } from '@/lib/actions/notifications';
 export interface ReceiptFilters {
   status?: string;
   location_id?: string;
@@ -361,5 +361,7 @@ export async function validateReceipt(
   revalidatePath('/receipts');
   revalidatePath(`/receipts/${id}`);
   revalidatePath('/products');
+  const affectedProductIds = lines.map(l => lineMap.get(l.id)).filter(Boolean) as string[];
+  await notifyLowStock(affectedProductIds)
   return { success: true };
 }

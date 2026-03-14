@@ -25,7 +25,7 @@ const thStyle = {
   textAlign: 'left' as const,
   fontSize: 11,
   fontWeight: 600,
-  color: '#64748b',
+  color: '#fff',
   textTransform: 'uppercase' as const,
   letterSpacing: '0.5px',
   borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -43,7 +43,7 @@ function ReceiptsTable({ receipts, activeStatus }: { receipts: ReceiptWithDetail
   if (receipts.length === 0) {
     return (
       <tr>
-        <td colSpan={8} style={{ padding: '48px', textAlign: 'center', color: '#64748b' }}>
+        <td colSpan={8} style={{ padding: '48px', textAlign: 'center', color: '#fff' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <PackagePlus size={32} style={{ opacity: 0.3 }} />
             <span>No receipts found. Create one to start tracking incoming stock.</span>
@@ -64,20 +64,20 @@ function ReceiptsTable({ receipts, activeStatus }: { receipts: ReceiptWithDetail
           <td style={{ ...tdStyle, fontWeight: 500 }}>{receipt.supplier_name}</td>
           <td style={tdStyle}>
             <div style={{ color: '#e2e8f0' }}>{receipt.destination_location_name}</div>
-            <div style={{ fontSize: 11, color: '#64748b' }}>{receipt.destination_warehouse_name}</div>
+            <div style={{ fontSize: 11, color: '#fff' }}>{receipt.destination_warehouse_name}</div>
           </td>
-          <td style={{ ...tdStyle, color: '#94a3b8' }}>
+          <td style={{ ...tdStyle, color: '#fff' }}>
             {receipt.scheduled_date
               ? format(new Date(receipt.scheduled_date), 'MMM d, yyyy')
               : '—'}
           </td>
-          <td style={{ ...tdStyle, color: '#94a3b8', textAlign: 'center' as const }}>
+          <td style={{ ...tdStyle, color: '#fff', textAlign: 'center' as const }}>
             {receipt.items_count}
           </td>
           <td style={tdStyle}>
             <StatusBadge status={receipt.status} type="receipt" />
           </td>
-          <td style={{ ...tdStyle, color: '#64748b', fontSize: 12 }}>
+          <td style={{ ...tdStyle, color: '#fff', fontSize: 12 }}>
             {format(new Date(receipt.created_at), 'MMM d, yyyy')}
           </td>
           <td style={{ ...tdStyle }}>
@@ -95,7 +95,7 @@ function ReceiptsTable({ receipts, activeStatus }: { receipts: ReceiptWithDetail
                   padding: '5px 8px', borderRadius: 6,
                   background: 'rgba(148,163,184,0.08)',
                   border: '1px solid rgba(148,163,184,0.15)',
-                  color: '#94a3b8', display: 'flex', alignItems: 'center',
+                  color: '#fff', display: 'flex', alignItems: 'center',
                 }}>
                   <Pencil size={13} />
                 </Link>
@@ -120,7 +120,7 @@ async function ReceiptsContent({ searchParams }: ReceiptsPageProps) {
   const receipts = await getReceipts(filters);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, color: "white" }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -135,7 +135,7 @@ async function ReceiptsContent({ searchParams }: ReceiptsPageProps) {
               {receipts.length}
             </span>
           </div>
-          <p style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+          <p style={{ fontSize: 13, color: '#fff', marginTop: 2 }}>
             Track incoming stock from suppliers
           </p>
         </div>
@@ -162,7 +162,7 @@ async function ReceiptsContent({ searchParams }: ReceiptsPageProps) {
               padding: '8px 16px',
               fontSize: 13,
               fontWeight: activeStatus === tab.value ? 600 : 400,
-              color: activeStatus === tab.value ? '#60a5fa' : '#64748b',
+              color: activeStatus === tab.value ? '#60a5fa' : '#fff',
               borderBottom: activeStatus === tab.value ? '2px solid #2563eb' : '2px solid transparent',
               textDecoration: 'none',
               transition: 'all 0.15s',
@@ -179,7 +179,7 @@ async function ReceiptsContent({ searchParams }: ReceiptsPageProps) {
         <div style={{ position: 'relative', flex: 1, maxWidth: 320 }}>
           <Search size={14} style={{
             position: 'absolute', left: 10, top: '50%',
-            transform: 'translateY(-50%)', color: '#64748b',
+            transform: 'translateY(-50%)', color: '#fff',
           }} />
           <Input
             name="q"
@@ -197,7 +197,7 @@ async function ReceiptsContent({ searchParams }: ReceiptsPageProps) {
         <Button type="submit" style={{
           height: 36, background: 'rgba(255,255,255,0.05)',
           border: '1px solid rgba(255,255,255,0.1)',
-          color: '#94a3b8', borderRadius: 8,
+          color: '#fff', borderRadius: 8,
         }}>
           Search
         </Button>
@@ -236,7 +236,7 @@ export default async function ReceiptsPage({ searchParams }: ReceiptsPageProps) 
   return (
     <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
       <Suspense fallback={
-        <div style={{ color: '#64748b', padding: 48, textAlign: 'center' }}>Loading receipts...</div>
+        <div style={{ color: '#fff', padding: 48, textAlign: 'center' }}>Loading receipts...</div>
       }>
         <ReceiptsContent searchParams={searchParams} />
       </Suspense>

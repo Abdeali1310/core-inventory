@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { notifyLowStock } from './notifications';
 
 export interface TransferFilters {
   status?: string;
@@ -399,5 +400,7 @@ export async function validateTransfer(id: string) {
   revalidatePath('/transfers');
   revalidatePath(`/transfers/${id}`);
   revalidatePath('/products');
+  const affectedProductIds = (transferLines || []).map(l => l.product_id);
+  await notifyLowStock(affectedProductIds);
   return { success: true };
 }
