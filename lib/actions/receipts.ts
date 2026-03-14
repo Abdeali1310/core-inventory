@@ -42,8 +42,8 @@ export async function getReceipts(filters?: ReceiptFilters) {
       notes,
       created_at,
       locations!inner(name, warehouses!inner(name)),
-      profiles!receipts_validated_by_fkey(full_name),
-      profiles!receipts_created_by_fkey(full_name),
+validator:profiles!receipts_validated_by_fkey(full_name),
+creator:profiles!receipts_created_by_fkey(full_name),
       receipt_lines(count)
     `)
     .order('created_at', { ascending: false });
@@ -63,8 +63,8 @@ export async function getReceipts(filters?: ReceiptFilters) {
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching receipts:', error);
-    throw new Error('Failed to fetch receipts');
+    console.error('Error fetching receipts:', JSON.stringify(error, null, 2));
+    throw new Error(error.message || 'Failed to fetch receipts');
   }
 
   return (data || []).map(r => ({
@@ -72,14 +72,13 @@ export async function getReceipts(filters?: ReceiptFilters) {
     reference: r.reference,
     supplier_name: r.supplier_name,
     destination_location_id: r.destination_location_id,
-    destination_location_name: (r.locations as unknown as { name: string })?.name || 'Unknown',
-    destination_warehouse_name: (r.locations as unknown as { warehouses: { name: string } })?.warehouses?.name || 'Unknown',
+    destination_location_name: (r.locations as unknown as { name: string }[])?.[0]?.name || 'Unknown',
+    destination_warehouse_name: (r.locations as unknown as { warehouses: { name: string }[] }[])?.[0]?.warehouses?.[0]?.name || 'Unknown',
     status: r.status,
     scheduled_date: r.scheduled_date,
     validated_at: r.validated_at,
-    validated_by_name: (r.profiles_receipts_validated_by_fkey as unknown as { full_name: string })?.full_name,
-    notes: r.notes,
-    created_by_name: (r.profiles_receipts_created_by_fkey as unknown as { full_name: string })?.full_name,
+    validated_by_name: (r.validator as unknown as { full_name: string })?.full_name,
+    created_by_name: (r.creator as unknown as { full_name: string })?.full_name, notes: r.notes,
     created_at: r.created_at,
     items_count: (r.receipt_lines as unknown as { count: number }[])?.[0]?.count || 0,
   }));
@@ -115,8 +114,8 @@ export async function getReceiptById(id: string): Promise<ReceiptDetail | null> 
       notes,
       created_at,
       locations!inner(name, warehouses!inner(name)),
-      profiles!receipts_validated_by_fkey(full_name),
-      profiles!receipts_created_by_fkey(full_name)
+      validator:profiles!receipts_validated_by_fkey(full_name),
+creator:profiles!receipts_created_by_fkey(full_name)
     `)
     .eq('id', id)
     .single();
@@ -146,22 +145,22 @@ export async function getReceiptById(id: string): Promise<ReceiptDetail | null> 
     reference: receipt.reference,
     supplier_name: receipt.supplier_name,
     destination_location_id: receipt.destination_location_id,
-    destination_location_name: (receipt.locations as unknown as { name: string })?.name || 'Unknown',
-    destination_warehouse_name: (receipt.locations as unknown as { warehouses: { name: string } })?.warehouses?.name || 'Unknown',
+    destination_location_name: (receipt.locations as unknown as { name: string }[])?.[0]?.name || 'Unknown',
+    destination_warehouse_name: (receipt.locations as unknown as { warehouses: { name: string }[] }[])?.[0]?.warehouses?.[0]?.name || 'Unknown',
     status: receipt.status,
     scheduled_date: receipt.scheduled_date,
     validated_at: receipt.validated_at,
-    validated_by_name: (receipt.profiles_receipts_validated_by_fkey as unknown as { full_name: string })?.full_name,
     notes: receipt.notes,
-    created_by_name: (receipt.profiles_receipts_created_by_fkey as unknown as { full_name: string })?.full_name,
+    validated_by_name: (receipt.validator as unknown as { full_name: string })?.full_name,
+    created_by_name: (receipt.creator as unknown as { full_name: string })?.full_name,
     created_at: receipt.created_at,
     items_count: (lines || []).length,
     lines: (lines || []).map(l => ({
       id: l.id,
       product_id: l.product_id,
-      product_name: (l.products as unknown as { name: string })?.name || 'Unknown',
-      product_sku: (l.products as unknown as { sku: string })?.sku || 'Unknown',
-      product_uom: (l.products as unknown as { unit_of_measure: string })?.unit_of_measure || 'pcs',
+      product_name: (l.products as unknown as { name: string }[])?.[0]?.name || 'Unknown',
+      product_sku: (l.products as unknown as { sku: string }[])?.[0]?.sku || 'Unknown',
+      product_uom: (l.products as unknown as { unit_of_measure: string }[])?.[0]?.unit_of_measure || 'pcs',
       expected_qty: Number(l.expected_qty),
       received_qty: Number(l.received_qty),
     })),
@@ -245,8 +244,6 @@ export async function updateReceiptStatus(id: string, status: string) {
     throw new Error('Unauthorized');
   }
 
-  const updateData: Record<string, unknown> = { status };
-
   if (status === 'ready') {
     const { data: receipt } = await supabase
       .from('receipts')
@@ -261,7 +258,7 @@ export async function updateReceiptStatus(id: string, status: string) {
 
   const { error } = await supabase
     .from('receipts')
-    .update(updateData)
+    .update({ status })
     .eq('id', id);
 
   if (error) {
@@ -299,6 +296,17 @@ export async function validateReceipt(
     throw new Error('Only ready receipts can be validated');
   }
 
+  const { data: receiptLines, error: linesError } = await supabase
+    .from('receipt_lines')
+    .select('id, product_id')
+    .eq('receipt_id', id);
+
+  if (linesError) {
+    throw new Error('Failed to fetch receipt lines');
+  }
+
+  const lineMap = new Map(receiptLines.map(l => [l.id, l.product_id]));
+
   for (const line of lines) {
     await supabase
       .from('receipt_lines')
@@ -307,10 +315,13 @@ export async function validateReceipt(
   }
 
   for (const line of lines) {
+    const productId = lineMap.get(line.id);
+    if (!productId) continue;
+
     const { data: existingStock } = await supabase
       .from('stock_levels')
       .select('quantity')
-      .eq('product_id', line.product_id)
+      .eq('product_id', productId)
       .eq('location_id', receipt.destination_location_id)
       .single();
 
@@ -320,14 +331,14 @@ export async function validateReceipt(
     await supabase
       .from('stock_levels')
       .upsert({
-        product_id: line.product_id,
+        product_id: productId,
         location_id: receipt.destination_location_id,
         quantity: newQty,
         updated_at: new Date().toISOString(),
       });
 
     await supabase.from('stock_ledger').insert({
-      product_id: line.product_id,
+      product_id: productId,
       location_id: receipt.destination_location_id,
       movement_type: 'receipt',
       reference_id: id,
