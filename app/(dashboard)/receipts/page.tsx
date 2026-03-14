@@ -6,7 +6,7 @@ import { Plus, Search, Eye, Pencil, PackagePlus } from 'lucide-react';
 import { getReceipts, ReceiptWithDetails } from '@/lib/actions/receipts';
 import { StatusBadge } from '@/components/operations/StatusBadge';
 import { format } from 'date-fns';
-
+import { createClient } from '@/lib/supabase/server';
 interface ReceiptsPageProps {
   searchParams: Promise<{ status?: string; location?: string; q?: string }>;
 }
@@ -109,6 +109,11 @@ function ReceiptsTable({ receipts, activeStatus }: { receipts: ReceiptWithDetail
 }
 
 async function ReceiptsContent({ searchParams }: ReceiptsPageProps) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', user?.id).single();
+  const isManager = profile?.role === 'manager';
   const params = await searchParams;
   const activeStatus = params.status || 'all';
   const filters = {
@@ -139,17 +144,19 @@ async function ReceiptsContent({ searchParams }: ReceiptsPageProps) {
             Track incoming stock from suppliers
           </p>
         </div>
-        <Link href="/receipts/new" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '8px 18px', borderRadius: 8,
-          background: 'linear-gradient(135deg, #2563eb, #1e40af)',
-          color: 'white', fontWeight: 600, fontSize: 13,
-          textDecoration: 'none',
-          boxShadow: '0 0 20px rgba(37,99,235,0.25)',
-        }}>
-          <Plus size={15} />
-          New Receipt
-        </Link>
+        {isManager && (
+          <Link href="/receipts/new" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '8px 18px', borderRadius: 8,
+            background: 'linear-gradient(135deg, #2563eb, #1e40af)',
+            color: 'white', fontWeight: 600, fontSize: 13,
+            textDecoration: 'none',
+            boxShadow: '0 0 20px rgba(37,99,235,0.25)',
+          }}>
+            <Plus size={15} />
+            New Receipt
+          </Link>
+        )}
       </div>
 
       {/* Status Tabs */}

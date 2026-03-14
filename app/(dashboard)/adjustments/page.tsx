@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { Plus, Eye, SlidersHorizontal } from 'lucide-react';
 import { getAdjustments, AdjustmentWithDetails } from '@/lib/actions/adjustments';
 import { format } from 'date-fns';
-
+import { createClient } from '@/lib/supabase/server';
 interface PageProps {
     searchParams: Promise<{ status?: string }>;
 }
@@ -41,6 +41,11 @@ const tdStyle = {
 };
 
 async function AdjustmentsContent({ searchParams }: PageProps) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+        .from('profiles').select('role').eq('id', user?.id).single();
+    const isManager = profile?.role === 'manager';
     const params = await searchParams;
     const activeStatus = params.status || 'all';
     const adjustments = await getAdjustments({ status: activeStatus });
@@ -68,17 +73,19 @@ async function AdjustmentsContent({ searchParams }: PageProps) {
                         Fix stock discrepancies with physical counts
                     </p>
                 </div>
-                <Link href="/adjustments/new" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '8px 18px', borderRadius: 8,
-                    background: 'linear-gradient(135deg, #2563eb, #1e40af)',
-                    color: 'white', fontWeight: 600, fontSize: 13,
-                    textDecoration: 'none',
-                    boxShadow: '0 0 20px rgba(37,99,235,0.25)',
-                }}>
-                    <Plus size={15} />
-                    New Adjustment
-                </Link>
+                {isManager && (
+                    <Link href="/adjustments/new" style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '8px 18px', borderRadius: 8,
+                        background: 'linear-gradient(135deg, #2563eb, #1e40af)',
+                        color: 'white', fontWeight: 600, fontSize: 13,
+                        textDecoration: 'none',
+                        boxShadow: '0 0 20px rgba(37,99,235,0.25)',
+                    }}>
+                        <Plus size={15} />
+                        New Adjustment
+                    </Link>
+                )}
             </div>
 
             {/* Status Tabs */}

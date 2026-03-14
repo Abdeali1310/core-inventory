@@ -189,7 +189,7 @@ export default function Topbar() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
 
           {/* Search hint */}
-          <button className="topbar-btn" style={{ width: "auto", padding: "0 12px", gap: 8 }}
+          {/* <button className="topbar-btn" style={{ width: "auto", padding: "0 12px", gap: 8 }}
             onClick={() => toast.info("Search coming soon!")}>
             <Search size={15} />
             <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>Search...</span>
@@ -199,7 +199,7 @@ export default function Topbar() {
               padding: "2px 5px", borderRadius: 4,
               fontFamily: "monospace",
             }}>⌘K</span>
-          </button>
+          </button> */}
 
           {/* Notifications */}
           <div style={{ position: "relative" }}>

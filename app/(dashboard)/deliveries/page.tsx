@@ -6,7 +6,7 @@ import { Plus, Search, Eye, PackageMinus } from 'lucide-react';
 import { getDeliveries, DeliveryWithDetails } from '@/lib/actions/deliveries';
 import { StatusBadge } from '@/components/operations/StatusBadge';
 import { format } from 'date-fns';
-
+import { createClient } from '@/lib/supabase/server';
 interface DeliveriesPageProps {
   searchParams: Promise<{ status?: string; location?: string; q?: string }>;
 }
@@ -97,6 +97,12 @@ function DeliveriesTable({ deliveries, activeStatus }: { deliveries: DeliveryWit
 }
 
 async function DeliveriesContent({ searchParams }: DeliveriesPageProps) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', user?.id).single();
+  const isManager = profile?.role === 'manager';
+
   const params = await searchParams;
   const activeStatus = params.status || 'all';
   const filters = {
@@ -127,17 +133,19 @@ async function DeliveriesContent({ searchParams }: DeliveriesPageProps) {
             Track outgoing stock to customers
           </p>
         </div>
-        <Link href="/deliveries/new" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '8px 18px', borderRadius: 8,
-          background: 'linear-gradient(135deg, #2563eb, #1e40af)',
-          color: 'white', fontWeight: 600, fontSize: 13,
-          textDecoration: 'none',
-          boxShadow: '0 0 20px rgba(37,99,235,0.25)',
-        }}>
-          <Plus size={15} />
-          New Delivery
-        </Link>
+        {isManager && (
+          <Link href="/deliveries/new" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '8px 18px', borderRadius: 8,
+            background: 'linear-gradient(135deg, #2563eb, #1e40af)',
+            color: 'white', fontWeight: 600, fontSize: 13,
+            textDecoration: 'none',
+            boxShadow: '0 0 20px rgba(37,99,235,0.25)',
+          }}>
+            <Plus size={15} />
+            New Delivery
+          </Link>
+        )}
       </div>
 
       {/* Status Tabs */}

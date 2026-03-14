@@ -10,7 +10,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-
+import { useProfile } from '@/lib/hooks/useProfile';
 const navGroups = [
   {
     label: "OVERVIEW",
@@ -79,7 +79,14 @@ export default function Sidebar() {
     fetchProfile();
     return () => { cancelled = true; };
   }, []);
-
+  const { isManager } = useProfile();
+  const filteredNavGroups = navGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      if (item.href === '/settings') return isManager;
+      return true;
+    })
+  })).filter(group => group.items.length > 0);
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -204,7 +211,7 @@ export default function Sidebar() {
 
         {/* Navigation */}
         <nav style={{ flex: 1, padding: "12px 12px", overflowY: "auto" }}>
-          {navGroups.map((group) => (
+          {filteredNavGroups.map((group) => (
             <div key={group.label} style={{ marginBottom: 20 }}>
               <div style={{
                 fontSize: 10, fontWeight: 700,
