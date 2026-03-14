@@ -258,7 +258,42 @@ export async function getCategories() {
 
   return data || [];
 }
+export interface ProductAtLocation {
+  id: string;
+  name: string;
+  sku: string;
+  unit_of_measure: string;
+  available_qty: number;
+}
 
+export async function getProductsByLocation(location_id: string): Promise<ProductAtLocation[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('stock_levels')
+    .select(`
+      quantity,
+      product_id,
+      products!inner(id, name, sku, unit_of_measure, is_active)
+    `)
+    .eq('location_id', location_id)
+    .gt('quantity', 0);
+
+  if (error) {
+    console.error('Error fetching products by location:', error);
+    return [];
+  }
+
+  return (data || [])
+    .filter(sl => (sl.products as unknown as { is_active: boolean })?.is_active)
+    .map(sl => ({
+      id: (sl.products as unknown as { id: string }).id,
+      name: (sl.products as unknown as { name: string }).name,
+      sku: (sl.products as unknown as { sku: string }).sku,
+      unit_of_measure: (sl.products as unknown as { unit_of_measure: string }).unit_of_measure,
+      available_qty: Number(sl.quantity),
+    }));
+}
 export async function getLocations() {
   const supabase = await createClient();
 

@@ -67,7 +67,7 @@ export function ProductsClient({
   useEffect(() => {
     const debounce = setTimeout(() => fetchProducts(), 300);
     return () => clearTimeout(debounce);
-  }, [fetchProducts]);
+  }, [search, selectedCategory, statusFilter]);
 
   useEffect(() => {
     async function loadLocations() {

@@ -77,9 +77,11 @@ export default function MoveHistoryClient({ initialEntries, locations, initialFi
     }, [search, typeFilter, locationFilter, dateFrom, dateTo]);
 
     useEffect(() => {
-        const t = setTimeout(fetchEntries, 300);
+        const t = setTimeout(() => {
+            fetchEntries();
+        }, 300);
         return () => clearTimeout(t);
-    }, [fetchEntries]);
+    }, [search, typeFilter, locationFilter, dateFrom, dateTo]);
 
     const handleExportCSV = () => {
         const headers = ['Date', 'Type', 'Reference', 'Product', 'SKU', 'Location', 'Warehouse', 'Qty Change', 'Qty After', 'Performed By'];

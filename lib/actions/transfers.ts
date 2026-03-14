@@ -44,8 +44,8 @@ export async function getTransfers(filters?: TransferFilters) {
       validated_at,
       notes,
       created_at,
-      source_locations!inner(name, warehouses!inner(name)),
-      dest_locations!inner(name, warehouses!inner(name)),
+      source:locations!internal_transfers_source_location_id_fkey(name, warehouses(name)),
+dest:locations!internal_transfers_dest_location_id_fkey(name, warehouses(name)),
       validator:profiles!internal_transfers_validated_by_fkey(full_name),
       creator:profiles!internal_transfers_created_by_fkey(full_name),
       transfer_lines(count)
@@ -80,11 +80,10 @@ export async function getTransfers(filters?: TransferFilters) {
     reference: r.reference,
     source_location_id: r.source_location_id,
     dest_location_id: r.dest_location_id,
-    source_location_name: (r.source_locations as unknown as { name: string }[])?.[0]?.name || 'Unknown',
-    dest_location_name: (r.dest_locations as unknown as { name: string }[])?.[0]?.name || 'Unknown',
-    source_warehouse_name: (r.source_locations as unknown as { warehouses: { name: string }[] }[])?.[0]?.warehouses?.[0]?.name || 'Unknown',
-    dest_warehouse_name: (r.dest_locations as unknown as { warehouses: { name: string }[] }[])?.[0]?.warehouses?.[0]?.name || 'Unknown',
-    status: r.status,
+    source_location_name: (r.source as unknown as { name: string })?.name || 'Unknown',
+    dest_location_name: (r.dest as unknown as { name: string })?.name || 'Unknown',
+    source_warehouse_name: (r.source as unknown as { warehouses: { name: string } })?.warehouses?.name || 'Unknown',
+    dest_warehouse_name: (r.dest as unknown as { warehouses: { name: string } })?.warehouses?.name || 'Unknown', status: r.status,
     scheduled_date: r.scheduled_date,
     validated_at: r.validated_at,
     validated_by_name: (r.validator as unknown as { full_name: string })?.full_name,
@@ -123,8 +122,8 @@ export async function getTransferById(id: string): Promise<TransferDetail | null
       validated_at,
       notes,
       created_at,
-      source_locations!inner(name, warehouses!inner(name)),
-      dest_locations!inner(name, warehouses!inner(name)),
+      source:locations!internal_transfers_source_location_id_fkey(name, warehouses(name)),
+      dest:locations!internal_transfers_dest_location_id_fkey(name, warehouses(name)),
       validator:profiles!internal_transfers_validated_by_fkey(full_name),
       creator:profiles!internal_transfers_created_by_fkey(full_name)
     `)
@@ -155,10 +154,10 @@ export async function getTransferById(id: string): Promise<TransferDetail | null
     reference: transfer.reference,
     source_location_id: transfer.source_location_id,
     dest_location_id: transfer.dest_location_id,
-    source_location_name: (transfer.source_locations as unknown as { name: string }[])?.[0]?.name || 'Unknown',
-    dest_location_name: (transfer.dest_locations as unknown as { name: string }[])?.[0]?.name || 'Unknown',
-    source_warehouse_name: (transfer.source_locations as unknown as { warehouses: { name: string }[] }[])?.[0]?.warehouses?.[0]?.name || 'Unknown',
-    dest_warehouse_name: (transfer.dest_locations as unknown as { warehouses: { name: string }[] }[])?.[0]?.warehouses?.[0]?.name || 'Unknown',
+    source_location_name: (transfer.source as unknown as { name: string })?.name || 'Unknown',
+    dest_location_name: (transfer.dest as unknown as { name: string })?.name || 'Unknown',
+    source_warehouse_name: (transfer.source as unknown as { warehouses: { name: string } })?.warehouses?.name || 'Unknown',
+    dest_warehouse_name: (transfer.dest as unknown as { warehouses: { name: string } })?.warehouses?.name || 'Unknown',
     status: transfer.status,
     scheduled_date: transfer.scheduled_date,
     validated_at: transfer.validated_at,
@@ -295,7 +294,7 @@ export async function validateTransfer(id: string) {
 
   const { data: transfer, error: transferError } = await supabase
     .from('internal_transfers')
-    .select('*, source_locations!inner(id, name), dest_locations!inner(id, name)')
+    .select('*')
     .eq('id', id)
     .single();
 
@@ -325,19 +324,19 @@ export async function validateTransfer(id: string) {
       .single();
 
     const sourceQty = sourceStock?.quantity || 0;
-    
+
     if (sourceQty < line.qty) {
       const { data: product } = await supabase
         .from('products')
         .select('name')
         .eq('id', line.product_id)
         .single();
-      
+
       throw new Error(`Insufficient stock for ${product?.name || 'product'}. Available: ${sourceQty}, Requested: ${line.qty}`);
     }
 
     const newSourceQty = sourceQty - line.qty;
-    
+
     await supabase
       .from('stock_levels')
       .upsert({
