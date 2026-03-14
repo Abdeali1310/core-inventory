@@ -55,18 +55,29 @@ export default function Sidebar() {
   const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchProfile = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || cancelled) return;
       const { data } = await supabase
         .from("profiles")
         .select("full_name, email, role, avatar_url")
         .eq("id", user.id)
         .single();
-      setProfile(data);
+      if (!cancelled && data) {
+        if (data.avatar_url) {
+          const { data: urlData } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(data.avatar_url);
+          setProfile({ ...data, avatar_url: urlData.publicUrl });
+        } else {
+          setProfile(data);
+        }
+      }
     };
     fetchProfile();
+    return () => { cancelled = true; };
   }, []);
 
   const handleSignOut = async () => {
@@ -238,12 +249,15 @@ export default function Sidebar() {
             {/* Avatar */}
             <div style={{
               width: 34, height: 34, borderRadius: 9,
-              background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+              background: profile?.avatar_url ? 'transparent' : "linear-gradient(135deg, #2563eb, #7c3aed)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 700, color: "white",
-              flexShrink: 0,
+              flexShrink: 0, overflow: "hidden",
+              border: "1px solid rgba(255,255,255,0.1)",
             }}>
-              {initials}
+              {profile?.avatar_url
+                ? <img src={profile.avatar_url} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : initials}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{

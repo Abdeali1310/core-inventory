@@ -52,22 +52,30 @@ export default function Topbar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [initials, setInitials] = useState("U");
   const [fullName, setFullName] = useState("");
-
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || cancelled) return;
 
       // Fetch profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("full_name, avatar_url")
         .eq("id", user.id)
         .single();
+
       if (profile?.full_name) {
         setFullName(profile.full_name);
         setInitials(profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2));
+      }
+      if (profile?.avatar_url) {
+        const { data: urlData } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(profile.avatar_url);
+        if (!cancelled) setAvatarUrl(urlData.publicUrl);
       }
 
       // Fetch notifications
@@ -77,7 +85,7 @@ export default function Topbar() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(5);
-      setNotifications(notifs || []);
+      if (!cancelled) setNotifications(notifs || []);
 
       // Realtime subscription
       const channel = supabase
@@ -92,6 +100,7 @@ export default function Topbar() {
       return () => { supabase.removeChannel(channel); };
     };
     fetchData();
+    return () => { cancelled = true; };
   }, []);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -242,12 +251,16 @@ export default function Topbar() {
               onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifs(false); }}
               style={{
                 width: 36, height: 36, borderRadius: 9,
-                background: "linear-gradient(135deg, #2563eb, #7c3aed)",
-                border: "none", cursor: "pointer",
+                background: avatarUrl ? 'transparent' : "linear-gradient(135deg, #2563eb, #7c3aed)",
+                border: avatarUrl ? "1px solid rgba(255,255,255,0.1)" : "none",
+                cursor: "pointer",
                 fontSize: 13, fontWeight: 700, color: "white",
                 display: "flex", alignItems: "center", justifyContent: "center",
+                overflow: "hidden", padding: 0,
               }}>
-              {initials}
+              {avatarUrl
+                ? <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : initials}
             </button>
 
             {showUserMenu && (
